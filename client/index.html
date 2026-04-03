@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Importer</title>
+    <style>
+        #import-dialog { padding: 20px; border-radius: 8px; border: 1px solid #ccc; width: 400px; }
+        .step-container { margin-bottom: 20px; }
+        .hidden { display: none; }
+        #log-container { 
+            background: #1e1e1e; color: #00ff00; 
+            padding: 10px; height: 200px; overflow-y: auto; 
+            font-family: monospace; font-size: 12px; border-radius: 4px;
+        }
+        progress { width: 100%; height: 20px; }
+        .log-entry { border-bottom: 1px solid #333; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+
+    <button popovertarget="import-dialog">Otwórz Import</button>
+
+    <div id="import-dialog" popover>
+        <div id="step-1" class="step-container">
+            <h1>1. Ciasteczka</h1>
+            <input type="file" id="cookies-file-input" accept=".txt" />
+        </div>
+
+        <div id="step-2" class="step-container hidden">
+            <h1>2. JSON TikTok</h1>
+            <input type="file" id="json-file-input" accept=".json" />
+        </div>
+
+        <div id="step-3" class="step-container hidden">
+            <h1>3. Pobieranie</h1>
+            <progress id="main-progress" value="0" max="100"></progress>
+            <div id="progress-text">Przygotowanie...</div>
+            <div id="log-container"></div>
+        </div>
+
+        <button popovertarget="import-dialog" popovertargetaction="hide">Zamknij</button>
+    </div>
+
+    <script>
+        const cookiesInput = document.getElementById('cookies-file-input');
+        const jsonInput = document.getElementById('json-file-input');
+        const step2 = document.getElementById('step-2');
+        const step3 = document.getElementById('step-3');
+        const logContainer = document.getElementById('log-container');
+        const progressBar = document.getElementById('main-progress');
+        const progressText = document.getElementById('progress-text');
+
+        const BASE_URL = 'http://127.0.0.1:3000';
+
+        function addLog(msg) {
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // --- KROK 1: COOKIES ---
+        cookiesInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const content = await file.text();
+            const resp = await fetch(`${BASE_URL}/cookies`, { method: 'POST', body: content });
+            if (resp.ok) {
+                cookiesInput.disabled = true;
+                step2.classList.remove('hidden');
+            }
+        });
+
+        // --- KROK 2 & 3: PRZETWARZANIE JSON I POBIERANIE ---
+        jsonInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const lastLikeResp = await fetch(`${BASE_URL}/last-like`);
+                const lastLikeDateStr = (await lastLikeResp.text()).trim();
+                const lastLikeDate = new Date(lastLikeDateStr);
+
+                const data = JSON.parse(await file.text());
+                const allLikes = data["Likes and Favorites"]["Like List"]["ItemFavoriteList"];
+                const filteredLikes = allLikes.filter(item => new Date(item.date) > lastLikeDate);
+
+                if (filteredLikes.length === 0) return alert("Brak nowych polubień.");
+
+                step3.classList.remove('hidden');
+                jsonInput.disabled = true;
+
+                // Przetwarzanie sekwencyjne
+                for (let i = 0; i < filteredLikes.length; i++) {
+                    const item = filteredLikes[i];
+                    const currentIdx = i + 1;
+                    
+                    // Aktualizacja paska postępu
+                    progressBar.value = (currentIdx / filteredLikes.length) * 100;
+                    progressText.textContent = `Przetwarzanie ${currentIdx} z ${filteredLikes.length}...`;
+
+                    addLog(`Pobieranie metadanych: ${item.link}`);
+
+                    // 1. Pobierz Metadane
+                    const metaResp = await fetch(`${BASE_URL}/metadata`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: item.link, date: item.date })
+                    });
+                    const metaData = await metaResp.json();
+
+                    if (!metaData || !metaData.id) {
+                        addLog(`BŁĄD: Nie udało się pobrać metadanych dla ${item.link}`);
+                        continue;
+                    }
+
+                    // 2. Uruchom Download
+                    addLog(`Start downloadu ID: ${metaData.id}`);
+                    await fetch(`${BASE_URL}/download`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: metaData.id, fullUrl: item.link, type: metaData.type })
+                    });
+
+                    // 3. SSE Progress - Czekaj na zakończenie elementu
+                    await new Promise((resolve) => {
+                        const eventSource = new EventSource(`${BASE_URL}/progress/${metaData.id}`);
+                        
+                        eventSource.onmessage = (event) => {
+                            try {
+                                const pData = JSON.parse(event.data);
+                                
+                                // Logowanie postępu z procesu (pData to zazwyczaj tekst z stdout/stderr)
+                                if (pData && typeof pData === 'object' && pData.type === 'complete') {
+                                    addLog(`✅ ZAKOŃCZONO: ${metaData.id}`);
+                                    eventSource.close();
+                                    resolve();
+                                } else {
+                                    // Wyświetlamy surowy tekst logu z serwera
+                                    const logMsg = typeof pData === 'string' ? pData : JSON.stringify(pData);
+                                    addLog(`[System]: ${logMsg}`);
+                                }
+                            } catch (e) {
+                                // Jeśli dane nie są JSONem, wyświetlamy je jako tekst
+                                addLog(`[Raw]: ${event.data}`);
+                            }
+                        };
+
+                        eventSource.onerror = (err) => {
+                            // EventSource często rzuca błąd 'error' gdy serwer zamyka połączenie (stream.close())
+                            // Sprawdzamy, czy połączenie zostało zamknięte (readyState === 2)
+                            if (eventSource.readyState === EventSource.CLOSED) {
+                                addLog(`Stream zamknięty dla ${metaData.id}`);
+                                resolve(); // Kontynuujemy pętlę
+                            } else {
+                                addLog(`⚠️ Błąd połączenia SSE (ID: ${metaData.id}). Próba ponownego połączenia...`);
+                                // Jeśli nie chcemy czekać w nieskończoność na retry:
+                                eventSource.close();
+                                resolve();
+                            }
+                        };
+                    });
+                }
+
+                const latestDate = filteredLikes[0].date;
+
+                addLog(`Aktualizowanie daty granicznej na: ${latestDate}...`);
+
+                const updateResp = await fetch(`${BASE_URL}/last-like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: latestDate
+                });
+                
+                addLog("WSZYSTKIE ZADANIA UKOŃCZONE!");
+                alert("Import zakończony!");
+
+            } catch (err) {
+                addLog(`KRYTYCZNY BŁĄD: ${err.message}`);
+            }
+        });
+    </script>
+</body>
+</html>

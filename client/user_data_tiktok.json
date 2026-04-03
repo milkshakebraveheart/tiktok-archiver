@@ -1,0 +1,314 @@
+{
+  "Likes and Favorites": {
+    "Collection": {},
+    "Favorite Collection": {
+      "FavoriteCollectionList": []
+    },
+    "Favorite Comment": {
+      "FavoriteCommentList": []
+    },
+    "Favorite Effects": {
+      "FavoriteEffectsList": null
+    },
+    "Favorite Hashtags": {
+      "FavoriteHashtagList": []
+    },
+    "Favorite Location": {
+      "FavoriteLocationList": [
+        {
+          "FavoriteLocation": "Mbombela Stadium"
+        }
+      ]
+    },
+    "Favorite Sounds": {
+      "FavoriteSoundList": [
+        {
+          "Date": "2024-03-16 23:14:06",
+          "Link": "https://m.tiktok.com/h5/share/music/7096167960925965061.html"
+        },
+        {
+          "Date": "2024-03-16 23:09:13",
+          "Link": "https://m.tiktok.com/h5/share/music/7270618717037004802.html"
+        }
+      ]
+    },
+    "Favorite Videos": {
+      "App": 1,
+      "FavoriteVideoList": []
+    },
+    "Like List": {
+      "App": 1,
+      "ItemFavoriteList": [
+        {
+          "date": "2026-03-15 21:37:57",
+          "link": "https://www.tiktokv.com/share/video/7611230609645554958/"
+        },
+        {
+          "date": "2026-03-15 21:05:14",
+          "link": "https://www.tiktokv.com/share/video/7616471190005124383/"
+        },
+        {
+          "date": "2026-03-15 21:04:59",
+          "link": "https://www.tiktokv.com/share/video/7615309182899670304/"
+        },
+        {
+          "date": "2026-03-15 21:04:39",
+          "link": "https://www.tiktokv.com/share/video/7617590818878033184/"
+        },
+        {
+          "date": "2026-03-15 21:01:03",
+          "link": "https://www.tiktokv.com/share/video/7616864864513936673/"
+        },
+        {
+          "date": "2026-03-15 16:41:12",
+          "link": "https://www.tiktokv.com/share/video/7617445944333716768/"
+        },
+        {
+          "date": "2026-03-15 16:27:31",
+          "link": "https://www.tiktokv.com/share/video/7617477349088496929/"
+        },
+        {
+          "date": "2026-03-15 15:38:07",
+          "link": "https://www.tiktokv.com/share/video/7616632559212006689/"
+        },
+        {
+          "date": "2026-03-15 15:20:25",
+          "link": "https://www.tiktokv.com/share/video/7617189483468885261/"
+        },
+        {
+          "date": "2026-03-15 12:30:25",
+          "link": "https://www.tiktokv.com/share/video/7608996445449981206/"
+        },
+        {
+          "date": "2026-03-15 12:28:50",
+          "link": "https://www.tiktokv.com/share/video/7615370288326397206/"
+        },
+        {
+          "date": "2026-03-15 11:57:38",
+          "link": "https://www.tiktokv.com/share/video/7604338030505217298/"
+        },
+        {
+          "date": "2026-03-15 11:28:08",
+          "link": "https://www.tiktokv.com/share/video/7616760721786801430/"
+        },
+        {
+          "date": "2026-03-15 11:27:56",
+          "link": "https://www.tiktokv.com/share/video/7616867301178084621/"
+        },
+        {
+          "date": "2026-03-14 21:40:06",
+          "link": "https://www.tiktokv.com/share/video/7617033535664278817/"
+        },
+        {
+          "date": "2026-03-14 18:47:42",
+          "link": "https://www.tiktokv.com/share/video/7617177592491265312/"
+        },
+        {
+          "date": "2026-03-14 13:00:25",
+          "link": "https://www.tiktokv.com/share/video/7616728975653604630/"
+        },
+        {
+          "date": "2026-03-14 12:58:27",
+          "link": "https://www.tiktokv.com/share/video/7617064983850978593/"
+        },
+        {
+          "date": "2026-03-14 09:14:43",
+          "link": "https://www.tiktokv.com/share/video/7597873617287777558/"
+        },
+        {
+          "date": "2026-03-14 07:15:40",
+          "link": "https://www.tiktokv.com/share/video/7616767225722113312/"
+        },
+        {
+          "date": "2026-03-14 06:40:22",
+          "link": "https://www.tiktokv.com/share/video/7616809832057769249/"
+        },
+        {
+          "date": "2026-03-13 22:19:55",
+          "link": "https://www.tiktokv.com/share/video/7607592005262249238/"
+        },
+        {
+          "date": "2026-03-13 22:17:47",
+          "link": "https://www.tiktokv.com/share/video/7616444875642375456/"
+        },
+        {
+          "date": "2026-03-13 22:05:23",
+          "link": "https://www.tiktokv.com/share/video/7612759005055700246/"
+        },
+        {
+          "date": "2026-03-13 22:05:12",
+          "link": "https://www.tiktokv.com/share/video/7613847210593357079/"
+        },
+        {
+          "date": "2026-03-13 21:53:40",
+          "link": "https://www.tiktokv.com/share/video/7616437554035871008/"
+        },
+        {
+          "date": "2026-03-13 19:25:19",
+          "link": "https://www.tiktokv.com/share/video/7616430026250063136/"
+        },
+        {
+          "date": "2026-03-13 19:16:53",
+          "link": "https://www.tiktokv.com/share/video/7616688180972047648/"
+        },
+        {
+          "date": "2026-03-13 17:35:37",
+          "link": "https://www.tiktokv.com/share/video/7607936115286297878/"
+        },
+        {
+          "date": "2026-03-13 17:31:19",
+          "link": "https://www.tiktokv.com/share/video/7616702534455004429/"
+        },
+        {
+          "date": "2026-03-13 14:15:34",
+          "link": "https://www.tiktokv.com/share/video/7616448390183800097/"
+        },
+        {
+          "date": "2026-03-13 06:54:23",
+          "link": "https://www.tiktokv.com/share/video/7616010732336958742/"
+        },
+        {
+          "date": "2026-03-13 05:33:15",
+          "link": "https://www.tiktokv.com/share/video/7615642843469614358/"
+        },
+        {
+          "date": "2026-03-12 21:06:34",
+          "link": "https://www.tiktokv.com/share/video/7615355815465192724/"
+        },
+        {
+          "date": "2026-03-12 21:04:51",
+          "link": "https://www.tiktokv.com/share/video/7616476932900687137/"
+        },
+        {
+          "date": "2026-03-12 20:43:58",
+          "link": "https://www.tiktokv.com/share/video/7616340529164422432/"
+        },
+        {
+          "date": "2026-03-12 17:15:53",
+          "link": "https://www.tiktokv.com/share/video/7616393057818266910/"
+        },
+        {
+          "date": "2026-03-12 17:09:15",
+          "link": "https://www.tiktokv.com/share/video/7615629869958974734/"
+        },
+        {
+          "date": "2026-03-12 15:54:53",
+          "link": "https://www.tiktokv.com/share/video/7613882021437279510/"
+        },
+        {
+          "date": "2026-03-12 15:23:45",
+          "link": "https://www.tiktokv.com/share/video/7615426153137982741/"
+        },
+        {
+          "date": "2026-03-12 15:19:56",
+          "link": "https://www.tiktokv.com/share/video/7615668956837268758/"
+        },
+        {
+          "date": "2026-03-12 14:37:16",
+          "link": "https://www.tiktokv.com/share/video/7612791855503199510/"
+        },
+        {
+          "date": "2026-03-12 14:37:01",
+          "link": "https://www.tiktokv.com/share/video/7615305238550940950/"
+        },
+        {
+          "date": "2026-03-12 14:36:46",
+          "link": "https://www.tiktokv.com/share/video/7615586829298912534/"
+        },
+        {
+          "date": "2026-03-12 14:35:35",
+          "link": "https://www.tiktokv.com/share/video/7610840281088298262/"
+        },
+        {
+          "date": "2026-03-12 12:13:54",
+          "link": "https://www.tiktokv.com/share/video/7605373538307968286/"
+        },
+        {
+          "date": "2026-03-12 12:13:32",
+          "link": "https://www.tiktokv.com/share/video/7608236654226181390/"
+        },
+        {
+          "date": "2026-03-12 11:51:35",
+          "link": "https://www.tiktokv.com/share/video/7616288958741220640/"
+        },
+        {
+          "date": "2026-03-12 11:48:36",
+          "link": "https://www.tiktokv.com/share/video/7616328113017900321/"
+        },
+        {
+          "date": "2026-03-12 10:19:12",
+          "link": "https://www.tiktokv.com/share/video/7616261873079504160/"
+        },
+        {
+          "date": "2026-03-12 09:55:44",
+          "link": "https://www.tiktokv.com/share/video/7615920072179207456/"
+        },
+        {
+          "date": "2026-03-12 09:44:27",
+          "link": "https://www.tiktokv.com/share/video/7615033900062035222/"
+        },
+        {
+          "date": "2026-03-12 09:44:03",
+          "link": "https://www.tiktokv.com/share/video/7615576384269716758/"
+        },
+        {
+          "date": "2026-03-12 08:40:21",
+          "link": "https://www.tiktokv.com/share/video/7614800487296126230/"
+        },
+        {
+          "date": "2026-03-12 08:39:26",
+          "link": "https://www.tiktokv.com/share/video/7614802425131683094/"
+        },
+        {
+          "date": "2026-03-12 08:35:39",
+          "link": "https://www.tiktokv.com/share/video/7615917855892081953/"
+        },
+        {
+          "date": "2026-03-12 06:50:42",
+          "link": "https://www.tiktokv.com/share/video/7615517201499540750/"
+        },
+        {
+          "date": "2026-03-12 06:45:21",
+          "link": "https://www.tiktokv.com/share/video/7616006537781218592/"
+        },
+        {
+          "date": "2026-03-08 21:38:50",
+          "link": "https://www.tiktokv.com/share/video/7614512126874455318/"
+        },
+        {
+          "date": "2026-03-08 21:15:08",
+          "link": "https://www.tiktokv.com/share/video/7614532628934528278/"
+        },
+        {
+          "date": "2026-03-08 20:56:10",
+          "link": "https://www.tiktokv.com/share/video/7612252955760135426/"
+        },
+        {
+          "date": "2026-03-08 20:52:12",
+          "link": "https://www.tiktokv.com/share/video/7614873029172202775/"
+        },
+        {
+          "date": "2026-03-08 18:40:40",
+          "link": "https://www.tiktokv.com/share/video/7612805084862467341/"
+        },
+        {
+          "date": "2026-03-08 12:46:34",
+          "link": "https://www.tiktokv.com/share/video/7593451964709588246/"
+        },
+        {
+          "date": "2026-03-08 11:29:31",
+          "link": "https://www.tiktokv.com/share/video/7613960427210345741/"
+        },
+        {
+          "date": "2026-03-08 10:16:29",
+          "link": "https://www.tiktokv.com/share/video/7614496682490858766/"
+        },
+        {
+          "date": "2026-03-08 10:06:37",
+          "link": "https://www.tiktokv.com/share/video/7613917141129006358/"
+        }
+      ]
+    }
+  }
+}
+
