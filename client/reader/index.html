@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Archiver</title>
+    <style>
+        body {
+            background-color: #3e3e3e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        input[type="search"] {
+            height: fit-content;
+            padding: 0.5em
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TikTok Archiver</h1>
+        <input type="search" placeholder="Wpisz frazę" />
+    </header>
+
+    <main>
+        
+
+    </main>
+
+    <script type="module">
+        import {LitElement, html, render,css} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+        const ROOT_URL = 'http://localhost:3000'
+        const ROOT_ASSETS_URL = ROOT_URL + '/assets'
+        
+        class TikTokTable extends LitElement {
+            static properties = {
+                activeItem: { type: Object },
+                activeItemIndex: { type: Number },
+                activePhotoIndex: {type: Number},
+                items: { type: Array },
+                page: { type: Number },
+                pageSize: { type: Number },
+            };
+
+            static styles = css`
+                table img {
+                    max-width: 100px;
+                }
+
+                a {
+                    color: #ffffff;
+                }
+                
+                table {
+                    width: 100%;
+                }
+
+                th {
+                    text-align: left;
+                }
+
+                button:has(img) {
+                    background: transparent;
+                    padding: 0;
+                    border: none;
+                    cursor: pointer;  
+                }
+
+                dialog {
+                    height: 90vh;
+                    width: 900px;
+                    max-width: 95%;
+                    display: flex;
+                    gap: 24px;             
+                    background-color: #353333;
+                    color: #fff;
+                    border: 0;
+
+                    &:not([open]) {
+                        display: none;
+                    }
+
+                    video, figure {
+                        width: 50%;
+                        margin: 0;
+                    }
+
+                    figure {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        position: relative;
+                        
+                        img {
+                            width: 100%;
+                        }
+
+                        button {
+                            position: absolute;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            opacity: 0.7;
+
+                            &.left {
+                                left: 0;
+                            }
+
+                            &.right {
+                                right: 0;
+                            }
+                        }
+                    }
+
+                    figcaption {
+                        text-align: center;
+                    }
+
+                    dt {
+                        color: #d0cfcf;
+                    }
+
+                    dd {
+                        margin: 0 0 24px;
+                        word-break: break-word;
+                    }
+
+                    .controls {
+                        display: flex;
+                        justify-content: space-between;
+                    }
+
+                    button {
+                        cursor: pointer;
+                        color: #ffffff;
+                        border: 0;
+                        font-size: 24px;
+                        background-color: #272727;
+                        height: 40px;
+                        width: 40px;
+                        border-radius: 50px;
+
+                        &:hover {
+                            background-color: #000000;
+                        }
+
+                        &.close {
+                            height: 32px;
+                            width: 32px;
+                            font-size: 16px
+                        }
+                    }
+
+                    audio {
+                        width: 100%;
+                    }
+                }
+                    
+
+                ::backdrop {
+                    background-color: rgb(0, 0, 0, 65%);
+                }
+            `
+
+            constructor() {
+                super()
+                this.items = []
+                this.page = 1
+                this.pageSize = 100
+                this.activeItem = null
+                this.activeItemIndex = -1
+                this.activePhotoIndex = 0
+
+                fetch(ROOT_URL + '/tiktoks')
+                    .then(response => response.json())
+                    .then(tiktoks => tiktoks.sort((a, b) => new Date(b.date) - new Date(a.date)))
+                    .then(tiktoks => {
+                        this.items = tiktoks
+                    })
+            }
+
+            get paginatedItems() {
+                return this.items.slice(0, 100)
+                // return [
+                //     {
+                //         "id": "7617177592491265312",
+                //         "date": "2026-03-14 18:47:42",
+                //         "username": "jadziakoc",
+                //         "fullUrl": "https://www.tiktok.com/@jadziakoc/video/7617177592491265312/",
+                //         "description": "survival instinct 10/10 stupidity 100/10",
+                //         "cover": "/assets/videos/7617177592491265312.jpg",
+                //         "type": "video",
+                //         "content": "/assets/videos/7617177592491265312.mp4"
+                //     },
+                //     {
+                //         "id": "7612759005055700246",
+                //         "date": "2026-03-13 22:05:23",
+                //         "fullUrl": "https://www.tiktok.com/@/photo/7612759005055700246/",
+                //         "cover": "/assets/photos/7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy1.jpg",
+                //         "username": "santeedesigns",
+                //         "description": "#vintageclothing #vintagefashion #xavi #debruyne #loropiana",
+                //         "type": "photo",
+                //         "content": [
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy0.mp3",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy1.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy2.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy3.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy4.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy5.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy6.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy7.jpg",
+                //         "7612759005055700246wżdysanteedesignswżdy#vintageclothing #vintagefashion #xavi #debruyne #loropianawżdy8.jpg"
+                //         ]
+                //     },
+                //     {
+                //         "id": "7616437554035871008",
+                //         "date": "2026-03-13 21:53:40",
+                //         "fullUrl": "https://www.tiktok.com/@/photo/7616437554035871008/",
+                //         "cover": "/assets/photos/undefined",
+                //         "type": "photo",
+                //         "content": [
+                //         null
+                //         ]
+                //     }
+                // ]
+            }
+
+            render() {
+                return html`
+                    <table>
+                        <thead>
+                            <th>Miniatura</th>
+                            <th>Kolejność</th>
+                            <th>Data polubienia</th>
+                            <th>Link</th>
+                            <th>Autor</th>
+                            <th>Opis</th>
+                        </thead>
+                        <tbody>
+                            ${this.paginatedItems.map(item => {
+                                return html`
+                                    <tr>
+                                        <td>${this.renderThumbnail(item)}</td>
+                                        <td>${this.renderOrder(item)}</td>
+                                        <td>${this.renderDate(item)}</td>
+                                        <td>${this.renderLink(item)}</td>
+                                        <td>${this.renderAuthor(item)}</td>
+                                        <td>${this.renderDescription(item)}</td>
+                                    </tr>
+                                `
+                            })}
+                        </tbody>
+                    </table>
+                    <button command="show-modal" commandfor="content-dialog">Open dialog</button>
+
+                    <dialog id="content-dialog" @close=${this.resetItemContent} @cancel=${this.resetItemContent}>
+                        ${this.renderDialogContent()}
+                    </dialog>
+                `
+            }
+
+            renderThumbnail(item) {
+                if (item.cover && !item.cover.endsWith('undefined')) {
+                    return html`
+                        <button class="thumbnailButton" command="show-modal" commandfor="content-dialog" @click=${() => this.showItemContent(item)}>
+                            <img src="${ROOT_URL + '/cover/' + item.id}" alt="${item.description}" loading="lazy" />
+                        </button>
+                    `
+                } else {
+                    return html`<button @click=${() => this.downloadMissingTikTok(item)}>Pobierz</button>`
+                }
+            }
+            
+            renderOrder(item) {
+                const order = this.items.length - (this.items.findIndex(i => i.id === item.id))
+                return html`${order}`
+            }
+
+            renderDate(item) {
+                if (item.date) {
+                    const formattedDate  = Intl.DateTimeFormat("pl-PL").format(new Date(item.date))
+                    return html`<time datetime=${item.date}>${formattedDate}</time>`
+                } else {
+                    return ''
+                }
+            }
+
+            renderLink(item) {
+                if (item.fullUrl) {
+                    return html`<a href="${item.fullUrl}" target="_blank">${item.fullUrl}</a>`
+                } else {
+                    return ''
+                }
+            }
+
+            renderAuthor(item) {
+                if (item.username) {
+                    return html`<a href="${'https://www.tiktok.com/@' + item.username}" target="_blank">${item.username}</a>`
+                } else {
+                    return ''
+                }
+            }
+
+            renderDescription(item) {
+                return item.description || ''
+            }
+
+            renderDialogContent() {
+                if (!this.activeItem) return ''
+                return html`
+                    ${this.renderDialogMultimedia()}
+                    ${this.renderDialogMetadata()}
+                `
+            }
+
+            renderDialogMultimedia() {
+                if (this.activeItem.type === 'video') {
+                    return html`
+                        <video controls autoplay loop>
+                            <source src="${ROOT_URL + this.activeItem.content}" type="video/mp4" />    
+                        </video>
+                    `
+                } else {
+                    return html`
+                        <figure>
+                            <img src="${ROOT_URL + '/images/' + this.activeItem.id + "/" + (this.activePhotoIndex + 1)}"  />
+                            <figcaption>${this.activePhotoIndex + 1} z ${this.activeItem.content.length - 1}</figcaption>
+                            <button class="left" @click=${this.showPreviousPhoto}>&#x3c;</button>
+                            <button class="right" @click=${this.showNextPhoto}>&#x3e;</button>
+                        </figure>
+                    `
+                }
+            }
+
+            renderDialogMetadata() {
+                const audioControls = this.activeItem.type === 'photo' && this.activeItem.content.length > 0 ?
+                    html`
+                        <audio controls autoplay loop>
+                            <source src="${ROOT_URL + '/audio/' + this.activeItem.id}" type="audio/mp3" />    
+                        </audio>
+                    ` : ''
+
+                return html`
+                    <article>
+                        <div class="controls">
+                            <div>
+                                <button @click=${this.showPreviousItem}>↑</button>
+                                <button @click=${this.showNextItem}>↓</button>
+                            </div>
+                            <button class="close" commandfor="content-dialog" command="close">X</button>
+                        </div>
+                        <dl>
+                            <dt>Autor</dt>
+                            <dd>${this.renderAuthor(this.activeItem)}</dd>
+            
+                            <dt>Link</dt>
+                            <dd>${this.renderLink(this.activeItem)}</dd>
+            
+                            <dt>Data polubienia</dt>
+                            <dd>${this.renderDate(this.activeItem)}</dd>
+
+                            <dt>Opis</dt>
+                            <dd>${this.renderDescription(this.activeItem)}</dd>
+                        </dl>
+                        ${audioControls}
+                    </article>
+                `
+            }
+
+            showItemContent(item) {
+                this.activeItem = item
+                this.activeItemIndex = this.items.findIndex(i => i.id === item.id)
+                this.activePhotoIndex = 0
+            }
+
+            showPreviousItem() {
+                if (this.activeItemIndex !== 0) {
+                    this.showItemContent(this.items[this.activeItemIndex - 1])
+                }
+            }
+
+            showNextItem() {
+                if (this.activeItemIndex + 1!== this.items.length) {
+                    this.showItemContent(this.items[this.activeItemIndex + 1])
+                }
+            }
+
+            showPreviousPhoto() {
+                if (this.activePhotoIndex - 1 === 0) {
+                    this.activePhotoIndex = this.activeItem.content.length - 1
+                } else {
+                    this.activePhotoIndex -= 1
+                }
+            }
+
+            showNextPhoto() {
+                if (this.activePhotoIndex + 1 === this.activeItem.content.length - 1) {
+                    this.activePhotoIndex = 0
+                } else {
+                    this.activePhotoIndex += 1
+                }
+            }
+
+            resetItemContent(item) {
+                this.activeItem = null
+                this.activeItemIndex = -1
+            }
+
+            downloadMissingTikTok(item) {
+                alert('No będzie pobierane', JSON.stringify(item))
+            }
+        }
+
+        const lastLikeHeading = async () => {
+            const res = await fetch(ROOT_URL + '/last-like')
+            const lastLike = await res.text()
+            
+            return html`<h2>Ostatnia modyfikacja: ${lastLike}</h2>`
+        } 
+
+        const prepareMainContent = async () => {
+            return html`${await lastLikeHeading()} <tiktok-table></tiktok-table>`
+        }
+
+        customElements.define('tiktok-table', TikTokTable);
+        
+        render(await prepareMainContent(), document.querySelector('main'))
+    </script>
+</body>
+</html>

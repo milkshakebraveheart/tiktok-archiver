@@ -1,20 +1,67 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { appendToJsonFile, downloadImage, findTikTokItem, getItemDataFromFileName, getTiktokMetadata, updateTikTokItem } from './services.js'
+import { appendToJsonFile, downloadImage, fileToBase64, findTikTokItem, getItemDataFromFileName, getTiktokMetadata, updateTikTokItem } from './services.js'
 import { readFile, writeFile } from 'fs/promises'
 import { cors } from 'hono/cors'
 import { streamSSE } from "hono/streaming"
 import type { ChildProcessWithoutNullStreams } from 'child_process'
 import { downloadVideo } from '../scripts/video-downloader.js'
 import { downloadGallery } from '../scripts/gallery-downloader.js'
+import { serveStatic } from '@hono/node-server/serve-static'
 
 const downloads = new Map<string, ChildProcessWithoutNullStreams>()
 
 const app = new Hono()
 app.use('*', cors())
+app.use(
+  '/assets/videos/*',
+  serveStatic({
+    root: '../',
+  })
+)
 
 app.get('/', (c) => {
   return c.text('Hello Hono!')
+})
+
+app.get('/tiktoks', async (c) => {
+  const tiktoks = await readFile('./data.json', {encoding: 'utf8'})
+  return c.json(JSON.parse(tiktoks))
+})
+
+app.get('/cover/:id', async (c) => {
+  const { id } = c.req.param()
+  const tiktokItem = await findTikTokItem(id)
+  if (!tiktokItem) {
+    return c.status(404)
+  }
+  const file = await readFile('..' + tiktokItem.cover)
+  c.header('Content-Type', 'image/jpeg')
+  return c.body(file)
+})
+
+app.get('/images/:id/:index', async (c) => {
+  const { id, index } = c.req.param()
+  const tiktokItem = await findTikTokItem(id)
+  if (!tiktokItem) {
+    return c.status(404)
+  }
+  const file = await readFile('../assets/photos/' + tiktokItem.content[Number(index)])
+  c.header('Content-Type', 'image/jpeg')
+  return c.body(file)
+})
+
+app.get('/audio/:id', async (c) => {
+  const { id } = c.req.param()
+  const tiktokItem = await findTikTokItem(id)
+  
+  if (!tiktokItem) {
+    return c.status(404)
+  }
+
+  const file = await readFile('../assets/photos/' + tiktokItem.content[0])
+  c.header('Content-Type', 'audio/mpeg')
+  return c.body(file)
 })
 
 app.get('/last-like', async (c) => {

@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import path from 'path'
 import { readdir, readFile, writeFile } from 'fs/promises';
 import fs from "fs"
 import https from "https"
@@ -192,4 +193,30 @@ export async function getItemDataFromFileName(id: string) {
   const content = [audio, ...photos] as string[]
 
   return {username, description, content: content, cover: `/assets/photos/${photos[0]}`};
+}
+
+function getMimeType(filePath: string) {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+    case '.png': return 'image/png';
+    case '.webp': return 'image/webp';
+    case '.gif': return 'image/gif';
+    case '.mp3': return 'audio/mpeg';
+    case '.wav': return 'audio/wav';
+    case '.ogg': return 'audio/ogg';
+    case '.m4a': return 'audio/mp4';
+    default: return 'image/jpeg';
+  }
+}
+
+export function fileToBase64(filePath: string) {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    const fileBuffer = fs.readFileSync(filePath);
+    const mimeType = getMimeType(filePath);
+    return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+  } catch (err) {
+    console.error(`Error reading file at ${filePath}:`, err.message);
+    return null;
+  }
 }
