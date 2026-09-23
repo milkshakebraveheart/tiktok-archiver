@@ -11,6 +11,11 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        /* Prevent background scrolling when dialog is open */
+        body.dialog-open {
+            overflow: hidden;
+        }
+
         header {
             display: flex;
             justify-content: space-between;
@@ -54,6 +59,8 @@
                 page: { type: Number },
                 pageSize: { type: Number },
                 savedVolume: { type: Number },
+                downloadingIds: { type: Object },
+                copiedStatus: { type: Boolean },
             };
 
             static styles = css`
@@ -136,14 +143,43 @@
                     background-color: #353333;
                     color: #fff;
                     border: 0;
+                    outline: none;
 
                     &:not([open]) {
                         display: none;
                     }
 
-                    video, figure {
+                    video, figure, .media-error {
                         width: 50%;
                         margin: 0;
+                    }
+
+                    .media-error {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        background-color: #222;
+                        border-radius: 8px;
+                        padding: 24px;
+                        text-align: center;
+
+                        p {
+                            margin: 12px 0;
+                            color: #aaa;
+                        }
+
+                        button {
+                            width: auto;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            font-size: 14px;
+                        }
+
+                        button:disabled {
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                        }
                     }
 
                     figure {
@@ -154,6 +190,8 @@
                         
                         img {
                             width: 100%;
+                            max-height: 80vh;
+                            object-fit: contain;
                         }
 
                         button {
@@ -176,6 +214,12 @@
                         text-align: center;
                     }
 
+                    article {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                    }
+
                     dt {
                         color: #d0cfcf;
                     }
@@ -188,9 +232,26 @@
                     .controls {
                         display: flex;
                         justify-content: space-between;
+                        margin-bottom: 16px;
                     }
 
-                    button {
+                    .copy-btn {
+                        background-color: #272727;
+                        color: #ffffff;
+                        border: 1px solid #555;
+                        padding: 4px 10px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        margin-left: 8px;
+                        vertical-align: middle;
+
+                        &:hover {
+                            background-color: #000;
+                        }
+                    }
+
+                    .nav-btn {
                         cursor: pointer;
                         color: #ffffff;
                         border: 0;
@@ -213,6 +274,7 @@
 
                     audio {
                         width: 100%;
+                        margin-top: auto;
                     }
                 }
                     
@@ -229,32 +291,120 @@
                 this.activeItem = null
                 this.activeItemIndex = -1
                 this.activePhotoIndex = 0
+                this.downloadingIds = {}
+                this.copiedStatus = false
 
                 const storedVol = localStorage.getItem('mediaVolume')
                 this.savedVolume = storedVol !== null ? parseFloat(storedVol) : 1.0
 
-                fetch(ROOT_URL + '/tiktoks')
-                    .then(response => response.json())
-                    .then(tiktoks => tiktoks.sort((a, b) => new Date(b.date) - new Date(a.date)))
-                    .then(tiktoks => {
-                        this.items = tiktoks
-                    })
+                this.handleKeyDown = this.handleKeyDown.bind(this)
+                this.handleWheel = this.handleWheel.bind(this)
+
+                this.fetchData()
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                window.addEventListener('keydown', this.handleKeyDown);
+            }
+
+            disconnectedCallback() {
+                super.disconnectedCallback();
+                window.removeEventListener('keydown', this.handleKeyDown);
+            }
+
+            handleKeyDown(e) {
+                if (!this.activeItem) return;
+
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.showPreviousItem();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.showNextItem();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (this.activeItem.type === 'photo' && this.hasValidPhotos(this.activeItem)) {
+                        this.showPreviousPhoto();
+                    } else {
+                        this.showPreviousItem();
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (this.activeItem.type === 'photo' && this.hasValidPhotos(this.activeItem)) {
+                        this.showNextPhoto();
+                    } else {
+                        this.showNextItem();
+                    }
+                }
+            }
+
+            handleWheel(e) {
+                if (!this.activeItem) return;
+                e.preventDefault();
+
+                if (e.deltaY < 0) {
+                    this.showPreviousItem();
+                } else if (e.deltaY > 0) {
+                    this.showNextItem();
+                }
+            }
+
+            async fetchData() {
+                try {
+                    const response = await fetch(ROOT_URL + '/tiktoks')
+                    const tiktoks = await response.json()
+                    tiktoks.sort((a, b) => new Date(b.date) - new Date(a.date))
+                    this.items = tiktoks
+
+                    if (this.activeItem) {
+                        const updatedActive = this.items.find(i => i.id === this.activeItem.id)
+                        if (updatedActive) {
+                            this.activeItem = updatedActive
+                            this.activeItemIndex = this.items.findIndex(i => i.id === updatedActive.id)
+                            this.clampPhotoIndex();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Błąd podczas pobierania danych:', err)
+                }
             }
 
             updated(changedProperties) {
                 if (changedProperties.has('activeItem') && this.activeItem) {
-                    if (this.activeItem.type === 'video') {
+                    this.clampPhotoIndex();
+                    if (this.activeItem.type === 'video' && this.activeItem.content) {
                         const videoEl = this.renderRoot.querySelector('video');
                         if (videoEl) {
                             videoEl.load();
                             videoEl.play().catch(() => {});
                         }
-                    } else if (this.activeItem.type === 'photo') {
+                    } else if (this.activeItem.type === 'photo' && this.hasValidPhotos(this.activeItem)) {
                         const audioEl = this.renderRoot.querySelector('audio');
                         if (audioEl) {
                             audioEl.load();
                             audioEl.play().catch(() => {});
                         }
+                    }
+                }
+            }
+
+            getValidPhotos(item) {
+                if (!item || !Array.isArray(item.content)) return [];
+                return item.content.filter(Boolean);
+            }
+
+            hasValidPhotos(item) {
+                return this.getValidPhotos(item).length > 0;
+            }
+
+            clampPhotoIndex() {
+                if (this.activeItem && this.activeItem.type === 'photo') {
+                    const photos = this.getValidPhotos(this.activeItem);
+                    if (photos.length === 0) {
+                        this.activePhotoIndex = 0;
+                    } else if (this.activePhotoIndex >= photos.length) {
+                        this.activePhotoIndex = photos.length - 1;
                     }
                 }
             }
@@ -286,6 +436,81 @@
                 this.pageSize = Number(e.target.value)
                 this.page = 1
                 window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+
+            async downloadMissingTikTok(item) {
+                if (this.downloadingIds[item.id]) return;
+
+                this.downloadingIds = { ...this.downloadingIds, [item.id]: true };
+
+                try {
+                    await fetch(`${ROOT_URL}/download`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: item.id,
+                            fullUrl: item.fullUrl,
+                            type: item.type,
+                            fallback: true
+                        })
+                    });
+
+                    await new Promise((resolve) => {
+                        const eventSource = new EventSource(`${ROOT_URL}/progress/${item.id}`);
+
+                        eventSource.onmessage = (event) => {
+                            try {
+                                const pData = JSON.parse(event.data);
+                                if (pData && typeof pData === 'object' && pData.type === 'complete') {
+                                    eventSource.close();
+                                    resolve();
+                                }
+                            } catch (e) {}
+                        };
+
+                        eventSource.onerror = () => {
+                            eventSource.close();
+                            resolve();
+                        };
+                    });
+
+                    await this.fetchData();
+
+                } catch (err) {
+                    console.error('Błąd pobierania:', err);
+                } finally {
+                    const updatedDownloading = { ...this.downloadingIds };
+                    delete updatedDownloading[item.id];
+                    this.downloadingIds = updatedDownloading;
+                }
+            }
+
+            copyLinkToClipboard(url) {
+                if (!url) return;
+
+                const performCopy = async () => {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(url);
+                    } else {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = url;
+                        textArea.style.position = "fixed";
+                        textArea.style.left = "-999999px";
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                    }
+                };
+
+                performCopy().then(() => {
+                    this.copiedStatus = true;
+                    setTimeout(() => {
+                        this.copiedStatus = false;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Błąd kopiowania linku:', err);
+                });
             }
 
             renderPagination() {
@@ -358,13 +583,15 @@
 
                     ${this.renderPagination()}
 
-                    <dialog id="content-dialog" @close=${this.resetItemContent} @cancel=${this.resetItemContent}>
+                    <dialog id="content-dialog" @wheel=${this.handleWheel} @close=${this.resetItemContent} @cancel=${this.resetItemContent}>
                         ${this.renderDialogContent()}
                     </dialog>
                 `
             }
 
             renderThumbnail(item) {
+                const isDownloading = !!this.downloadingIds[item.id]
+
                 if (item.cover && !item.cover.endsWith('undefined')) {
                     return html`
                         <button class="thumbnailButton" command="show-modal" commandfor="content-dialog" @click=${() => this.showItemContent(item)}>
@@ -372,7 +599,11 @@
                         </button>
                     `
                 } else {
-                    return html`<button @click=${() => this.downloadMissingTikTok(item)}>Pobierz</button>`
+                    return html`
+                        <button ?disabled=${isDownloading} @click=${() => this.downloadMissingTikTok(item)}>
+                            ${isDownloading ? 'Pobieranie...' : 'Pobierz'}
+                        </button>
+                    `
                 }
             }
             
@@ -420,6 +651,9 @@
 
             renderDialogMultimedia() {
                 if (this.activeItem.type === 'video') {
+                    if (!this.activeItem.content) {
+                        return this.renderMissingMediaPlaceholder()
+                    }
                     return html`
                         <video 
                             src="${ROOT_URL + this.activeItem.content}"
@@ -431,19 +665,42 @@
                         </video>
                     `
                 } else {
+                    const validPhotos = this.getValidPhotos(this.activeItem);
+                    if (validPhotos.length === 0) {
+                        return this.renderMissingMediaPlaceholder();
+                    }
+
+                    const totalPhotos = validPhotos.length;
                     return html`
                         <figure>
                             <img src="${ROOT_URL + '/images/' + this.activeItem.id + "/" + (this.activePhotoIndex + 1)}" />
-                            <figcaption>${this.activePhotoIndex + 1} z ${this.activeItem.content.length - 1}</figcaption>
-                            <button class="left" @click=${this.showPreviousPhoto}>&#x3c;</button>
-                            <button class="right" @click=${this.showNextPhoto}>&#x3e;</button>
+                            <figcaption>${this.activePhotoIndex + 1} z ${totalPhotos}</figcaption>
+                            ${totalPhotos > 1 ? html`
+                                <button class="nav-btn left" @click=${this.showPreviousPhoto}>&#x3c;</button>
+                                <button class="nav-btn right" @click=${this.showNextPhoto}>&#x3e;</button>
+                            ` : ''}
                         </figure>
                     `
                 }
             }
 
+            renderMissingMediaPlaceholder() {
+                const isDownloading = !!this.downloadingIds[this.activeItem.id]
+
+                return html`
+                    <div class="media-error">
+                        ⚠️
+                        <p>Brak pobranych multimediów dla tego wpisu.</p>
+                        <button ?disabled=${isDownloading} @click=${() => this.downloadMissingTikTok(this.activeItem)}>
+                            ${isDownloading ? 'Pobieranie...' : 'Pobierz ponownie'}
+                        </button>
+                    </div>
+                `
+            }
+
             renderDialogMetadata() {
-                const audioControls = this.activeItem.type === 'photo' && this.activeItem.content.length > 0 ?
+                const hasPhotos = this.hasValidPhotos(this.activeItem)
+                const audioControls = this.activeItem.type === 'photo' && hasPhotos ?
                     html`
                         <audio 
                             src="${ROOT_URL + '/audio/' + this.activeItem.id}"
@@ -459,16 +716,22 @@
                     <article>
                         <div class="controls">
                             <div>
-                                <button @click=${this.showPreviousItem}>↑</button>
-                                <button @click=${this.showNextItem}>↓</button>
+                                <button class="nav-btn" @click=${this.showPreviousItem}>↑</button>
+                                <button class="nav-btn" @click=${this.showNextItem}>↓</button>
                             </div>
-                            <button class="close" commandfor="content-dialog" command="close">X</button>
+                            <button class="nav-btn close" commandfor="content-dialog" command="close">X</button>
                         </div>
                         <dl>
                             <dt>Autor</dt>
                             <dd>${this.renderAuthor(this.activeItem)}</dd>
             
-                            <dt>Link</dt>
+                            <dt>
+                                Link 
+                                ${this.activeItem.fullUrl ? html`
+                                    <button class="copy-btn" @click=${() => this.copyLinkToClipboard(this.activeItem.fullUrl)}>${this.copiedStatus ? 'Skopiowano!' : '⧉'}
+                                    </button>
+                                ` : ''}
+                            </dt>
                             <dd>${this.renderLink(this.activeItem)}</dd>
             
                             <dt>Data polubienia</dt>
@@ -486,6 +749,9 @@
                 this.activeItem = item
                 this.activeItemIndex = this.items.findIndex(i => i.id === item.id)
                 this.activePhotoIndex = 0
+                this.copiedStatus = false
+
+                document.body.classList.add('dialog-open')
 
                 if (this.activeItemIndex !== -1) {
                     const expectedPage = Math.floor(this.activeItemIndex / this.pageSize) + 1
@@ -508,28 +774,33 @@
             }
 
             showPreviousPhoto() {
-                if (this.activePhotoIndex - 1 === 0) {
-                    this.activePhotoIndex = this.activeItem.content.length - 1
+                const validPhotos = this.getValidPhotos(this.activeItem);
+                if (validPhotos.length <= 1) return;
+
+                if (this.activePhotoIndex <= 0) {
+                    this.activePhotoIndex = validPhotos.length - 1;
                 } else {
-                    this.activePhotoIndex -= 1
+                    this.activePhotoIndex -= 1;
                 }
             }
 
             showNextPhoto() {
-                if (this.activePhotoIndex + 1 === this.activeItem.content.length - 1) {
-                    this.activePhotoIndex = 0
+                const validPhotos = this.getValidPhotos(this.activeItem);
+                if (validPhotos.length <= 1) return;
+
+                if (this.activePhotoIndex >= validPhotos.length - 1) {
+                    this.activePhotoIndex = 0;
                 } else {
-                    this.activePhotoIndex += 1
+                    this.activePhotoIndex += 1;
                 }
             }
 
-            resetItemContent(item) {
+            resetItemContent() {
                 this.activeItem = null
                 this.activeItemIndex = -1
-            }
-
-            downloadMissingTikTok(item) {
-                alert('No będzie pobierane', JSON.stringify(item))
+                this.activePhotoIndex = 0
+                this.copiedStatus = false
+                document.body.classList.remove('dialog-open')
             }
         }
 

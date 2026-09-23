@@ -109,8 +109,8 @@ app.post('/metadata', async (c) => {
 });
 
 app.post('/download', async (c) => {
-  const { id, fullUrl, type } = await c.req.json()
-  const process = type === 'video' ? downloadVideo(fullUrl, id) : downloadGallery(fullUrl)
+  const { id, fullUrl, type, fallback } = await c.req.json()
+  const process = type === 'video' ? downloadVideo(fullUrl, id) : downloadGallery(fullUrl, fallback || false)
   process.on("close", async () => {
     if (type === "video") {
       const item = await findTikTokItem(id)

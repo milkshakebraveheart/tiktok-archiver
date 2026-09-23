@@ -4,13 +4,13 @@ import path from "path"
 const binary = path.resolve("./bin/gallery-dl.exe")
 export const special = 'wżdy'
 
-export function downloadGallery(url: string) {
+export function downloadGallery(url: string, fallback: boolean) {
   const args = [
     url,
     "--write-log", "stdout",
     "--cookies", "cookies.txt",
     "-D", '../assets/photos',
-      "-o", `filename={id}${special}{user}${special}{title}${special}{num}.{extension}`
+      "-o", `filename={id}${special}{user}${special}${fallback ? 'This is fallback title' : '{title}'}${special}{num}.{extension}`
   ]
 
   const proc = spawn(binary, args)
