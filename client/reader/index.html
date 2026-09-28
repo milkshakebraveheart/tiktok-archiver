@@ -9,6 +9,7 @@
             background-color: #3e3e3e;
             color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 16px;
         }
 
         /* Prevent background scrolling when dialog is open */
@@ -19,6 +20,13 @@
         header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
             align-items: center;
         }
 
@@ -33,22 +41,137 @@
 
         input[type="search"] {
             height: fit-content;
-            padding: 0.5em
+            padding: 0.5em;
+            background-color: #272727;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+        }
+
+        .btn {
+            background-color: #272727;
+            color: #ffffff;
+            border: 1px solid #555;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+
+            &:hover:not(:disabled) {
+                background-color: #000;
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        /* Styles for Import Popover Dialog */
+        #import-dialog {
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            width: 480px;
+            max-width: 90vw;
+            background-color: #2b2b2b;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            outline: none;
+        }
+
+        #import-dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.65);
+        }
+
+        .step-container {
+            margin-bottom: 20px;
+        }
+
+        .step-container h3 {
+            margin-top: 0;
+            font-size: 18px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #log-container {
+            background: #181818;
+            color: #00ff66;
+            padding: 10px;
+            height: 180px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            margin-top: 10px;
+        }
+
+        progress {
+            width: 100%;
+            height: 16px;
+            margin-bottom: 6px;
+        }
+
+        .log-entry {
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 4px;
+            padding-bottom: 2px;
+            word-break: break-all;
+        }
+
+        .dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
         }
     </style>
 </head>
 <body>
     <header>
         <h1>TikTok Archiver</h1>
-        <input type="search" placeholder="Wpisz frazę" />
+        <div class="header-actions">
+            <input type="search" id="search-input" placeholder="Wpisz frazę..." />
+            <button class="btn" id="random-btn">🎲 Losuj</button>
+            <button class="btn" popovertarget="import-dialog">Otwórz Import</button>
+        </div>
     </header>
 
     <main></main>
 
+    <!-- POPOVER IMPORT DIALOG -->
+    <div id="import-dialog" popover>
+        <div id="step-1" class="step-container">
+            <h3>1. Ciasteczka (.txt)</h3>
+            <input type="file" id="cookies-file-input" accept=".txt" />
+        </div>
+
+        <div id="step-2" class="step-container hidden">
+            <h3>2. JSON TikTok</h3>
+            <input type="file" id="json-file-input" accept=".json" />
+        </div>
+
+        <div id="step-3" class="step-container hidden">
+            <h3>3. Pobieranie</h3>
+            <progress id="main-progress" value="0" max="100"></progress>
+            <div id="progress-text">Przygotowanie...</div>
+            <div id="log-container"></div>
+        </div>
+
+        <div class="dialog-footer">
+            <button class="btn" popovertarget="import-dialog" popovertargetaction="hide">Zamknij</button>
+        </div>
+    </div>
+
     <script type="module">
         import {LitElement, html, render, css} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-        const ROOT_URL = 'http://localhost:3000'
-        const ROOT_ASSETS_URL = ROOT_URL + '/assets'
+        const ROOT_URL = 'http://localhost:3000';
+        const BASE_URL = 'http://127.0.0.1:3000';
         
         class TikTokTable extends LitElement {
             static properties = {
@@ -61,6 +184,7 @@
                 savedVolume: { type: Number },
                 downloadingIds: { type: Object },
                 copiedStatus: { type: Boolean },
+                searchQuery: { type: String }
             };
 
             static styles = css`
@@ -268,7 +392,7 @@
                         &.close {
                             height: 32px;
                             width: 32px;
-                            font-size: 16px
+                            font-size: 16px;
                         }
                     }
 
@@ -277,7 +401,7 @@
                         margin-top: auto;
                     }
                 }
-                    
+
                 ::backdrop {
                     background-color: rgb(0, 0, 0, 65%);
                 }
@@ -293,6 +417,7 @@
                 this.activePhotoIndex = 0
                 this.downloadingIds = {}
                 this.copiedStatus = false
+                this.searchQuery = ''
 
                 const storedVol = localStorage.getItem('mediaVolume')
                 this.savedVolume = storedVol !== null ? parseFloat(storedVol) : 1.0
@@ -361,7 +486,7 @@
                         const updatedActive = this.items.find(i => i.id === this.activeItem.id)
                         if (updatedActive) {
                             this.activeItem = updatedActive
-                            this.activeItemIndex = this.items.findIndex(i => i.id === updatedActive.id)
+                            this.activeItemIndex = this.filteredItems.findIndex(i => i.id === updatedActive.id)
                             this.clampPhotoIndex();
                         }
                     }
@@ -409,14 +534,24 @@
                 }
             }
 
+            get filteredItems() {
+                if (!this.searchQuery.trim()) return this.items;
+                const q = this.searchQuery.toLowerCase().trim();
+                return this.items.filter(item => {
+                    const descMatch = item.description ? item.description.toLowerCase().includes(q) : false;
+                    const userMatch = item.username ? item.username.toLowerCase().includes(q) : false;
+                    return descMatch || userMatch;
+                });
+            }
+
             get totalPages() {
-                return Math.ceil(this.items.length / this.pageSize) || 1
+                return Math.ceil(this.filteredItems.length / this.pageSize) || 1
             }
 
             get paginatedItems() {
                 const start = (this.page - 1) * this.pageSize
                 const end = start + this.pageSize
-                return this.items.slice(start, end)
+                return this.filteredItems.slice(start, end)
             }
 
             handleVolumeChange(e) {
@@ -436,6 +571,23 @@
                 this.pageSize = Number(e.target.value)
                 this.page = 1
                 window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+
+            openRandomItem() {
+                const list = this.filteredItems;
+                if (!list || list.length === 0) {
+                    alert("Brak elementów do wylosowania.");
+                    return;
+                }
+                const randomIndex = Math.floor(Math.random() * list.length);
+                const randomItem = list[randomIndex];
+                
+                this.showItemContent(randomItem);
+
+                const dialog = this.renderRoot.querySelector('#content-dialog');
+                if (dialog && !dialog.open) {
+                    dialog.showModal();
+                }
             }
 
             async downloadMissingTikTok(item) {
@@ -517,7 +669,7 @@
                 return html`
                     <div class="pagination">
                         <div>
-                            Strona ${this.page} z ${this.totalPages} (${this.items.length} pozycji)
+                            Strona ${this.page} z ${this.totalPages} (${this.filteredItems.length} pozycji)
                         </div>
 
                         <div class="pagination-controls">
@@ -600,7 +752,7 @@
                     `
                 } else {
                     return html`
-                        <button ?disabled=${isDownloading} @click=${() => this.downloadMissingTikTok(item)}>
+                        <button class="btn" ?disabled=${isDownloading} @click=${() => this.downloadMissingTikTok(item)}>
                             ${isDownloading ? 'Pobieranie...' : 'Pobierz'}
                         </button>
                     `
@@ -691,7 +843,7 @@
                     <div class="media-error">
                         ⚠️
                         <p>Brak pobranych multimediów dla tego wpisu.</p>
-                        <button ?disabled=${isDownloading} @click=${() => this.downloadMissingTikTok(this.activeItem)}>
+                        <button class="btn" ?disabled=${isDownloading} @click=${() => this.downloadMissingTikTok(this.activeItem)}>
                             ${isDownloading ? 'Pobieranie...' : 'Pobierz ponownie'}
                         </button>
                     </div>
@@ -728,7 +880,7 @@
                             <dt>
                                 Link 
                                 ${this.activeItem.fullUrl ? html`
-                                    <button class="copy-btn" @click=${() => this.copyLinkToClipboard(this.activeItem.fullUrl)}>${this.copiedStatus ? 'Skopiowano!' : '⧉'}
+                                    <button class="copy-btn" @click=${() => this.copyLinkToClipboard(this.activeItem.fullUrl)}>${this.copiedStatus ? 'Skopiowano!' : 'Kopiuj link'}
                                     </button>
                                 ` : ''}
                             </dt>
@@ -747,7 +899,7 @@
 
             showItemContent(item) {
                 this.activeItem = item
-                this.activeItemIndex = this.items.findIndex(i => i.id === item.id)
+                this.activeItemIndex = this.filteredItems.findIndex(i => i.id === item.id)
                 this.activePhotoIndex = 0
                 this.copiedStatus = false
 
@@ -763,13 +915,13 @@
 
             showPreviousItem() {
                 if (this.activeItemIndex > 0) {
-                    this.showItemContent(this.items[this.activeItemIndex - 1])
+                    this.showItemContent(this.filteredItems[this.activeItemIndex - 1])
                 }
             }
 
             showNextItem() {
-                if (this.activeItemIndex + 1 < this.items.length) {
-                    this.showItemContent(this.items[this.activeItemIndex + 1])
+                if (this.activeItemIndex + 1 < this.filteredItems.length) {
+                    this.showItemContent(this.filteredItems[this.activeItemIndex + 1])
                 }
             }
 
@@ -804,20 +956,190 @@
             }
         }
 
-        const lastLikeHeading = async () => {
-            const res = await fetch(ROOT_URL + '/last-like')
-            const lastLike = await res.text()
-            
-            return html`<h2>Ostatnia modyfikacja: ${lastLike}</h2>`
+        const fetchLastLikeDate = async () => {
+            try {
+                const res = await fetch(ROOT_URL + '/last-like')
+                return await res.text()
+            } catch (err) {
+                return 'Brak danych'
+            }
+        }
+
+        const renderHeaderInfo = async () => {
+            const lastLike = await fetchLastLikeDate()
+            return html`<h2 id="last-like-header">Ostatnia modyfikacja: ${lastLike}</h2>`
         } 
 
         const prepareMainContent = async () => {
-            return html`${await lastLikeHeading()} <tiktok-table></tiktok-table>`
+            return html`${await renderHeaderInfo()} <tiktok-table id="main-table"></tiktok-table>`
         }
 
         customElements.define('tiktok-table', TikTokTable);
         
         render(await prepareMainContent(), document.querySelector('main'))
+
+        // Wire up Search Input
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('input', (e) => {
+            const tableEl = document.querySelector('tiktok-table');
+            if (tableEl) {
+                tableEl.searchQuery = e.target.value;
+                tableEl.page = 1; // Reset to first page when filtering
+            }
+        });
+
+        // Wire up Random Button
+        const randomBtn = document.getElementById('random-btn');
+        randomBtn.addEventListener('click', () => {
+            const tableEl = document.querySelector('tiktok-table');
+            if (tableEl) {
+                tableEl.openRandomItem();
+            }
+        });
+
+        // --- WRITING / IMPORT MECHANISM CODE ---
+        const cookiesInput = document.getElementById('cookies-file-input');
+        const jsonInput = document.getElementById('json-file-input');
+        const step2 = document.getElementById('step-2');
+        const step3 = document.getElementById('step-3');
+        const logContainer = document.getElementById('log-container');
+        const progressBar = document.getElementById('main-progress');
+        const progressText = document.getElementById('progress-text');
+
+        function addLog(msg) {
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // --- KROK 1: COOKIES ---
+        cookiesInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const content = await file.text();
+            const resp = await fetch(`${BASE_URL}/cookies`, { method: 'POST', body: content });
+            if (resp.ok) {
+                cookiesInput.disabled = true;
+                step2.classList.remove('hidden');
+            }
+        });
+
+        // --- KROK 2 & 3: PRZETWARZANIE JSON I POBIERANIE ---
+        jsonInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const lastLikeResp = await fetch(`${BASE_URL}/last-like`);
+                const lastLikeDateStr = (await lastLikeResp.text()).trim();
+                const lastLikeDate = new Date(lastLikeDateStr);
+
+                const data = JSON.parse(await file.text());
+                const allLikes = data["Likes and Favorites"]["Like List"]["ItemFavoriteList"];
+                const filteredLikes = allLikes.filter(item => new Date(item.date) > lastLikeDate);
+
+                if (filteredLikes.length === 0) return alert("Brak nowych polubień.");
+
+                step3.classList.remove('hidden');
+                jsonInput.disabled = true;
+
+                // Przetwarzanie sekwencyjne
+                for (let i = 0; i < filteredLikes.length; i++) {
+                    const item = filteredLikes[i];
+                    const currentIdx = i + 1;
+                    
+                    // Aktualizacja paska postępu
+                    progressBar.value = (currentIdx / filteredLikes.length) * 100;
+                    progressText.textContent = `Przetwarzanie ${currentIdx} z ${filteredLikes.length}...`;
+
+                    addLog(`Pobieranie metadanych: ${item.link}`);
+
+                    // 1. Pobierz Metadane
+                    const metaResp = await fetch(`${BASE_URL}/metadata`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: item.link, date: item.date })
+                    });
+                    const metaData = await metaResp.json();
+
+                    if (!metaData || !metaData.id) {
+                        addLog(`BŁĄD: Nie udało się pobrać metadanych dla ${item.link}`);
+                        continue;
+                    }
+
+                    // 2. Uruchom Download
+                    addLog(`Start downloadu ID: ${metaData.id}`);
+                    await fetch(`${BASE_URL}/download`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: metaData.id, fullUrl: item.link, type: metaData.type })
+                    });
+
+                    // 3. SSE Progress - Czekaj na zakończenie elementu
+                    await new Promise((resolve) => {
+                        const eventSource = new EventSource(`${BASE_URL}/progress/${metaData.id}`);
+                        
+                        eventSource.onmessage = (event) => {
+                            try {
+                                const pData = JSON.parse(event.data);
+                                
+                                if (pData && typeof pData === 'object' && pData.type === 'complete') {
+                                    addLog(`✅ ZAKOŃCZONO: ${metaData.id}`);
+                                    eventSource.close();
+                                    resolve();
+                                } else {
+                                    const logMsg = typeof pData === 'string' ? pData : JSON.stringify(pData);
+                                    addLog(`[System]: ${logMsg}`);
+                                }
+                            } catch (e) {
+                                addLog(`[Raw]: ${event.data}`);
+                            }
+                        };
+
+                        eventSource.onerror = (err) => {
+                            if (eventSource.readyState === EventSource.CLOSED) {
+                                addLog(`Stream zamknięty dla ${metaData.id}`);
+                                resolve();
+                            } else {
+                                addLog(`⚠️ Błąd połączenia SSE (ID: ${metaData.id}). Próba ponownego połączenia...`);
+                                eventSource.close();
+                                resolve();
+                            }
+                        };
+                    });
+                }
+
+                const latestDate = filteredLikes[0].date;
+
+                addLog(`Aktualizowanie daty granicznej na: ${latestDate}...`);
+
+                await fetch(`${BASE_URL}/last-like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: latestDate
+                });
+                
+                addLog("WSZYSTKIE ZADANIA UKOŃCZONE!");
+                alert("Import zakończony!");
+
+                // Odświeżenie danych na stronie po zakończeniu importu
+                const tableEl = document.querySelector('tiktok-table');
+                if (tableEl && typeof tableEl.fetchData === 'function') {
+                    tableEl.fetchData();
+                }
+
+                const lastLikeHeader = document.getElementById('last-like-header');
+                if (lastLikeHeader) {
+                    const newLastLike = await fetchLastLikeDate();
+                    lastLikeHeader.textContent = `Ostatnia modyfikacja: ${newLastLike}`;
+                }
+
+            } catch (err) {
+                addLog(`KRYTYCZNY BŁĄD: ${err.message}`);
+            }
+        });
     </script>
 </body>
 </html>
