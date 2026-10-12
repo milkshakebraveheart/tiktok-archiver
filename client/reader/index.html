@@ -210,6 +210,16 @@
                     padding: 8px;
                 }
 
+                @keyframes milestoneGlow {
+                    0% { background-color: rgba(255, 215, 0, 0.0); }
+                    50% { background-color: rgba(255, 215, 0, 0.25); }
+                    100% { background-color: rgba(255, 215, 0, 0.0); }
+                }
+
+                .milestone-row {
+                    animation: milestoneGlow 2.5s ease-in-out infinite;
+                }
+
                 button:has(img) {
                     background: transparent;
                     padding: 0;
@@ -342,6 +352,7 @@
                         flex: 1;
                         display: flex;
                         flex-direction: column;
+                        overflow-y: auto;
                     }
 
                     dt {
@@ -411,7 +422,10 @@
                 super()
                 this.items = []
                 this.page = 1
-                this.pageSize = 50
+                
+                const storedPageSize = localStorage.getItem('pageSize')
+                this.pageSize = storedPageSize !== null ? Number(storedPageSize) : 50
+
                 this.activeItem = null
                 this.activeItemIndex = -1
                 this.activePhotoIndex = 0
@@ -569,6 +583,7 @@
 
             handlePageSizeChange(e) {
                 this.pageSize = Number(e.target.value)
+                localStorage.setItem('pageSize', this.pageSize)
                 this.page = 1
                 window.scrollTo({ top: 0, behavior: 'smooth' })
             }
@@ -719,8 +734,10 @@
                         </thead>
                         <tbody>
                             ${this.paginatedItems.map(item => {
+                                const order = this.items.length - (this.items.findIndex(i => i.id === item.id))
+                                const isMilestone = order > 0 && order % 100 === 0
                                 return html`
-                                    <tr>
+                                    <tr class="${isMilestone ? 'milestone-row' : ''}">
                                         <td>${this.renderThumbnail(item)}</td>
                                         <td>${this.renderOrder(item)}</td>
                                         <td>${this.renderDate(item)}</td>
@@ -874,6 +891,9 @@
                             <button class="nav-btn close" commandfor="content-dialog" command="close">X</button>
                         </div>
                         <dl>
+                            <dt>Kolejność</dt>
+                            <dd>${this.renderOrder(this.activeItem)}</dd>
+
                             <dt>Autor</dt>
                             <dd>${this.renderAuthor(this.activeItem)}</dd>
             
