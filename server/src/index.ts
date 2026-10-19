@@ -114,6 +114,9 @@ app.post('/download', async (c) => {
   process.on("close", async () => {
     if (type === "video") {
       const item = await findTikTokItem(id)
+      if (!item) {
+        return null
+      }
       if (item!.cover) {
         await downloadImage(item!.cover, `../assets/videos/${id}.jpg`)
       }
