@@ -5643,11 +5643,22 @@
     "id": "7630499229726674208",
     "date": "2026-04-19 16:42:07",
     "fullUrl": "https://www.tiktok.com/@/photo/7630499229726674208/",
-    "cover": "/assets/photos/undefined",
+    "cover": "/assets/photos/7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy1.jpg",
     "type": "photo",
     "content": [
-      null
-    ]
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy0.mp3",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy1.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy2.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy3.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy4.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy5.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy6.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy7.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy8.jpg",
+      "7630499229726674208wżdymrsgravelawżdyThis is fallback titlewżdy9.jpg"
+    ],
+    "username": "mrsgravela",
+    "description": "This is fallback title"
   },
   {
     "id": "7630410513934994721",
@@ -9162,11 +9173,16 @@
     "id": "7639793678361447713",
     "date": "2026-05-15 20:30:13",
     "fullUrl": "https://www.tiktok.com/@/photo/7639793678361447713/",
-    "cover": "/assets/photos/undefined",
+    "cover": "/assets/photos/7639793678361447713wżdytwojstylplwżdyThis is fallback titlewżdy1.jpg",
     "type": "photo",
     "content": [
-      null
-    ]
+      "7639793678361447713wżdytwojstylplwżdyThis is fallback titlewżdy0.mp3",
+      "7639793678361447713wżdytwojstylplwżdyThis is fallback titlewżdy1.jpg",
+      "7639793678361447713wżdytwojstylplwżdyThis is fallback titlewżdy2.jpg",
+      "7639793678361447713wżdytwojstylplwżdyThis is fallback titlewżdy3.jpg"
+    ],
+    "username": "twojstylpl",
+    "description": "This is fallback title"
   },
   {
     "id": "7640208317440068884",

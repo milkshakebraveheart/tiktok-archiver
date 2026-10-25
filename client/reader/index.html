@@ -240,6 +240,7 @@
                     display: flex;
                     gap: 8px;
                     align-items: center;
+                    flex-wrap: wrap;
                 }
 
                 .pagination button {
@@ -257,6 +258,12 @@
                     &:disabled {
                         opacity: 0.5;
                         cursor: not-allowed;
+                    }
+
+                    &.active-page {
+                        background-color: #555;
+                        border-color: #888;
+                        font-weight: bold;
                     }
                 }
 
@@ -421,10 +428,12 @@
             constructor() {
                 super()
                 this.items = []
-                this.page = 1
                 
                 const storedPageSize = localStorage.getItem('pageSize')
                 this.pageSize = storedPageSize !== null ? Number(storedPageSize) : 50
+
+                const storedPage = localStorage.getItem('currentPage')
+                this.page = storedPage !== null ? Number(storedPage) : 1
 
                 this.activeItem = null
                 this.activeItemIndex = -1
@@ -495,6 +504,12 @@
                     const tiktoks = await response.json()
                     tiktoks.sort((a, b) => new Date(b.date) - new Date(a.date))
                     this.items = tiktoks
+
+                    // Ensure page is valid after data is loaded/filtered
+                    if (this.page > this.totalPages) {
+                        this.page = this.totalPages;
+                        localStorage.setItem('currentPage', this.page);
+                    }
 
                     if (this.activeItem) {
                         const updatedActive = this.items.find(i => i.id === this.activeItem.id)
@@ -577,6 +592,7 @@
             goToPage(newPage) {
                 if (newPage >= 1 && newPage <= this.totalPages) {
                     this.page = newPage
+                    localStorage.setItem('currentPage', this.page)
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
             }
@@ -585,6 +601,7 @@
                 this.pageSize = Number(e.target.value)
                 localStorage.setItem('pageSize', this.pageSize)
                 this.page = 1
+                localStorage.setItem('currentPage', this.page)
                 window.scrollTo({ top: 0, behavior: 'smooth' })
             }
 
@@ -681,6 +698,29 @@
             }
 
             renderPagination() {
+                const pages = [];
+                const total = this.totalPages;
+                const current = this.page;
+
+                // Generate smart page numbers list with ellipsis logic if needed, or simply a window around current page
+                const delta = 2;
+                let range = [];
+                for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
+                    range.push(i);
+                }
+
+                if (current - delta > 2) {
+                    range.unshift('...');
+                }
+                range.unshift(1);
+
+                if (current + delta < total - 1) {
+                    range.push('...');
+                }
+                if (total > 1) {
+                    range.push(total);
+                }
+
                 return html`
                     <div class="pagination">
                         <div>
@@ -699,6 +739,16 @@
                                 Poprzednia
                             </button>
                             
+                            ${range.map(p => p === '...' 
+                                ? html`<span>...</span>` 
+                                : html`
+                                    <button 
+                                        class="${p === this.page ? 'active-page' : ''}"
+                                        @click=${() => this.goToPage(p)}>${p}
+                                    </button>
+                                `
+                            )}
+
                             <button 
                                 ?disabled=${this.page === this.totalPages} 
                                 @click=${() => this.goToPage(this.page + 1)}>
@@ -929,6 +979,7 @@
                     const expectedPage = Math.floor(this.activeItemIndex / this.pageSize) + 1
                     if (this.page !== expectedPage) {
                         this.page = expectedPage
+                        localStorage.setItem('currentPage', this.page)
                     }
                 }
             }
@@ -1005,6 +1056,7 @@
             if (tableEl) {
                 tableEl.searchQuery = e.target.value;
                 tableEl.page = 1; // Reset to first page when filtering
+                localStorage.setItem('currentPage', tableEl.page);
             }
         });
 
